@@ -27,3 +27,4 @@ def is_full(board):
 
 def switch_player(player):
     return "O" if player == "X" else "X"
+
