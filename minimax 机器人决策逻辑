@@ -1,0 +1,6 @@
+| 函数名                                                              | 输入参数类型               | 返回类型                                    | 功能描述                             |
+| :--------------------------------------------------------------- | :------------------- | :-------------------------------------- | :------------------------------- |
+| `evaluate(board: List[List[str]], player: str)`                  | 棋盘二维列表、玩家标识          | `int`                                   | 启发式评估函数，根据己方与对方的连续棋子计算局势分数       |
+| `get_candidate_moves(board: List[List[str]], distance: int = 1)` | 棋盘二维列表、搜索半径          | `List[Tuple[int, int]]`                 | 获取靠近已有棋子的可落子空位，减少搜索空间            |
+| `minimax(board, depth, alpha, beta, maximizing, player)`         | 棋盘、深度、α、β、是否最大化、玩家标识 | `Tuple[int, Optional[Tuple[int, int]]]` | 实现 α-β 剪枝的 Minimax 搜索算法，递归决策最优落点 |
+| `minimax_bot(board, player, depth=3)`                            | 棋盘、玩家、搜索深度           | `Tuple[int, int]`                       | 封装 Minimax 搜索，返回最佳落子点（AI接口）      |
