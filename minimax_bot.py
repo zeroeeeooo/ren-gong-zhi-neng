@@ -1,4 +1,4 @@
-from .utils import check_win, switch_player
+from utils import check_win, switch_player
 import math
 
 def evaluate(board, player):
