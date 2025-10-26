@@ -118,8 +118,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     xuanze = XuanZeJieMian()
     xuanze.ui.show()
-    bot_type = xuanze.getBotType()
     app.exec_()
+    bot_type = xuanze.getBotType()
+    print("选择的bot类型：", bot_type)
     # 示例：运行客户端（可通过命令行参数或直接修改参数）
     # 用法1：默认参数（本地主控+simple_bot）
     # socket_client()
