@@ -5,7 +5,8 @@ from random_bot import random_aibot
 from simple_bot import simple_aibot
 from minimax_bot import minimax_aibot
 from utils import is_full  # 用于判断棋盘是否已满（避免极端场景）
-
+from xuanzejiemianTest import XuanZeJieMian
+from PySide2.QtWidgets import QApplication
 # 通信协议配置（需与主控程序保持完全一致）
 BUFFER_SIZE = 4096  # 数据缓冲区大小
 ENCODING = "utf-8"  # 字符编码
@@ -114,6 +115,11 @@ def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_d
 
 
 if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    xuanze = XuanZeJieMian()
+    xuanze.ui.show()
+    bot_type = xuanze.getBotType()
+    app.exec_()
     # 示例：运行客户端（可通过命令行参数或直接修改参数）
     # 用法1：默认参数（本地主控+simple_bot）
     # socket_client()
@@ -122,6 +128,6 @@ if __name__ == "__main__":
     socket_client(
         host="127.0.0.1",  # 替换为主控程序的IP
         port=12345,  # 替换为主控程序的Socket端口
-        bot_type="minimax_bot",  # 选择算法：random_bot/simple_bot/minimax_bot
+        bot_type="simple_bot",  # 选择算法：random_bot/simple_bot/minimax_bot
         minimax_depth=4  # 仅minimax_bot生效，建议3-5（过深会卡顿）
     )
