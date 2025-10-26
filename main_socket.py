@@ -100,12 +100,14 @@ import json
 import threading
 import time
 from utils import create_board, check_win, is_full, switch_player  # 复用之前的工具函数
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtCore import QFile, QTimer, QObject, Signal
 from qizi import QiZi, BaiQiZi, HeiQiZi
 from zhujiemianTest import ZhuJieMian
 from duizhanTest import DuiZhanJieMian
+from jieshuTest import JieShuJieMian
 import sys
 
 # -------------------------- 1. 服务端配置（需与客户端一致） --------------------------
@@ -115,12 +117,40 @@ BUFFER_SIZE = 4096   # 数据缓冲区：与客户端保持一致
 ENCODING = "utf-8"   # 编码格式：与客户端保持一致，避免乱码
 
 
+
+class myQMessageBox(QMessageBox):
+    def __init__(self, title, text, button_text, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setText(text)
+
+        # 创建并保存自定义按钮引用
+        self.custom_button = QPushButton(button_text)
+
+        # 把按钮注册到 QMessageBox 并指定角色
+        self.addButton(self.custom_button, QMessageBox.AcceptRole)
+
+def show_remind(message,worker):
+    msg_box = myQMessageBox("信息", message, "确定")
+    # 阻塞显示对话框，返回值为按钮角色或标准按钮标识
+    result = msg_box.exec_()
+    # 首选：检查被点击的按钮是否为我们保存的 custom_button
+    clicked = msg_box.clickedButton()
+    if clicked == msg_box.custom_button:
+        print("用户点击了确定按钮")
+    else:
+        print("用户未点击确定按钮")
+
+
+
 class SocketWorker(QObject):
     """后台 socket 工作线程：接收客户端落子并通过信号发送给 GUI 主线程来显示棋子。"""
     move_received = Signal(int, int, str)  # row, col, color_str ('white'/'black')
+    # 使用单参数字符串 signal；不要在 Signal 类型签名中引用类名（会导致 NameError）
+    remind = Signal(str)
     info = Signal(str)
 
-    def __init__(self, host=HOST, port=PORT, buffer_size=BUFFER_SIZE, encoding=ENCODING, board_size=19):
+    def __init__(self, host=HOST, port=PORT, buffer_size=BUFFER_SIZE, encoding=ENCODING, board_size=13):
         super().__init__()
         self.host = host
         self.port = port
@@ -132,6 +162,9 @@ class SocketWorker(QObject):
     def stop(self):
         self._stop.set()
 
+    def reset(self):
+        self._stop.clear()
+
     def run(self):
         """在独立线程中运行 socket 服务端。收到落子时 emit move_received(row, col, color)
         该方法会阻塞直到连接关闭或 stop() 被调用。"""
@@ -139,12 +172,11 @@ class SocketWorker(QObject):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind((self.host, self.port))
         server_socket.listen(1)
-        self.info.emit(f"主控服务端已启动，正在{self.host}:{self.port}等待算法客户端连接...")
+        self.remind.emit(f"主控服务端已启动，正在{self.host}:{self.port}等待算法客户端连接...")
 
         try:
             client_conn, client_addr = server_socket.accept()
-            self.info.emit(f"已与算法客户端{client_addr}建立连接，开始对战！")
-
+            self.remind.emit(f"已与算法客户端{client_addr}建立连接，开始对战！")
             board = create_board(size=self.board_size)
             current_player = "X"
             game_over = False
@@ -155,24 +187,24 @@ class SocketWorker(QObject):
                 try:
                     client_conn.sendall(json.dumps(request_data).encode(self.encoding))
                 except Exception as e:
-                    self.info.emit(f"发送请求失败：{e}")
+                    self.remind.emit(f"发送请求失败：{e}")
                     break
 
                 # 接收响应
                 try:
                     response_bytes = client_conn.recv(self.buffer_size)
                 except Exception as e:
-                    self.info.emit(f"接收响应失败：{e}")
+                    self.remind.emit(f"接收响应失败：{e}")
                     break
 
                 if not response_bytes:
-                    self.info.emit("客户端断开连接，结束对战")
+                    self.remind.emit("客户端断开连接，结束对战")
                     break
 
                 try:
                     response = json.loads(response_bytes.decode(self.encoding))
                 except Exception as e:
-                    self.info.emit(f"解析客户端响应失败：{e}")
+                    self.remind.emit(f"解析客户端响应失败：{e}")
                     break
 
                 row = response.get('row')
@@ -181,14 +213,14 @@ class SocketWorker(QObject):
 
                 # 简单合法性检查
                 if row is None or col is None:
-                    self.info.emit("收到无效坐标，终止对局")
+                    self.remind.emit("收到无效坐标，终止对局")
                     break
                 if not (0 <= row < self.board_size and 0 <= col < self.board_size):
-                    self.info.emit("坐标超出范围，终止对局")
+                    self.remind.emit("坐标超出范围，终止对局")
                     break
 
                 if board[row][col] != '.':
-                    self.info.emit(f"客户端落子{row},{col}已被占用，终止对局")
+                    self.remind.emit(f"客户端落子{row},{col}已被占用，终止对局")
                     break
 
                 # 更新逻辑棋盘并通过信号通知 GUI 放子（GUI 接受 (x=col, y=row)）
@@ -199,12 +231,13 @@ class SocketWorker(QObject):
 
                 # 判胜负
                 if check_win(board, current_player):
-                    self.info.emit(f"玩家{current_player}获胜！")
+                    self.remind.emit(f"玩家{current_player}获胜！")
                     game_over = True
                 elif is_full(board):
-                    self.info.emit("棋盘已满，平局！")
+                    self.remind.emit("棋盘已满，平局！")
                     game_over = True
                 else:
+                    time.sleep(0.5)
                     current_player = switch_player(current_player)
 
             # 关闭连接
@@ -220,15 +253,15 @@ class SocketWorker(QObject):
                 server_socket.close()
             except Exception:
                 pass
-            self.info.emit("主控服务端已停止")
+            self.remind.emit("主控服务端已停止")
+            print("主控服务端已停止")
 
 
 def start_gui_with_socket():
-    app = QApplication([])
     view = DuiZhanJieMian()
     view.ui.show()
 
-    worker = SocketWorker(board_size=19)
+    worker = SocketWorker(board_size=13)
 
     # 将 worker 的 move_received 信号连接到 view.place_piece
     # 注意：view.place_piece 接受 pos=(x,y) 与 color 字符串
@@ -240,8 +273,9 @@ def start_gui_with_socket():
             print(f"在 GUI 中放子失败：{e}")
 
     worker.move_received.connect(on_move)
-
     # 将信息信号打印到控制台（也可扩展到 UI 上）
+    # 将 remind 信号连接到 show_remind，并传入 worker 实例（通过 lambda 捕获）
+    worker.remind.connect(lambda msg, w=worker: show_remind(msg, w))
     worker.info.connect(lambda s: print(s))
 
     # 在后台线程运行 socket 服务
@@ -249,8 +283,21 @@ def start_gui_with_socket():
     t.start()
 
     # 启动 Qt 事件循环
-    sys.exit(app.exec_())
+    app.exec_()
+    
 
+def jieshupanduan():
+    view = JieShuJieMian()
+    view.ui.show()
+    app.exec_()
+    return view.getEndFlag()
 
 if __name__ == '__main__':
-    start_gui_with_socket()
+    endflag = 0
+    app = QApplication([])
+    while endflag == 0:
+        start_gui_with_socket()
+        print(111)
+        endflag = jieshupanduan()
+
+
