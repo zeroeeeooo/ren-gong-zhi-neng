@@ -1,7 +1,15 @@
+'''
 import socket
 import json
 from utils import create_board, check_win, is_full, switch_player  # 复用之前的工具函数
-
+from PySide2.QtWidgets import QApplication, QMessageBox
+from PySide2.QtUiTools import QUiLoader
+from PySide2.QtCore import QFile, QTimer
+from qizi import QiZi, BaiQiZi, HeiQiZi
+from zhujiemianTest import ZhuJieMian
+from duizhanTest import DuiZhanJieMian
+import sys
+import time
 # -------------------------- 1. 服务端配置（需与客户端一致） --------------------------
 HOST = "127.0.0.1"  # 服务端IP（本地测试用127.0.0.1，局域网用本机IP）
 PORT = 12345         # 端口号：必须与算法客户端的port完全一致
@@ -9,6 +17,9 @@ BUFFER_SIZE = 4096   # 数据缓冲区：与客户端保持一致
 ENCODING = "utf-8"   # 编码格式：与客户端保持一致，避免乱码
 
 # -------------------------- 2. 主控核心逻辑（匹配+对战） --------------------------
+
+
+
 def main():
     # 1. 创建Socket服务端对象（TCP协议）
     # socket.AF_INET：互联网协议；socket.SOCK_STREAM：TCP可靠传输
@@ -83,13 +94,163 @@ def main():
 
     except Exception as e:
         print(f"主控程序出错：{str(e)}")
-    finally:
-        # 关闭连接（无论是否出错，都要释放资源）
-        if "client_conn" in locals():
-            client_conn.close()
-            print("已关闭与客户端的连接")
-        server_socket.close()
-        print("已关闭主控服务端")
+'''
+import socket
+import json
+import threading
+import time
+from utils import create_board, check_win, is_full, switch_player  # 复用之前的工具函数
+from PySide2.QtWidgets import QApplication, QMessageBox
+from PySide2.QtUiTools import QUiLoader
+from PySide2.QtCore import QFile, QTimer, QObject, Signal
+from qizi import QiZi, BaiQiZi, HeiQiZi
+from zhujiemianTest import ZhuJieMian
+from duizhanTest import DuiZhanJieMian
+import sys
 
-if __name__ == "__main__":
-    main()
+# -------------------------- 1. 服务端配置（需与客户端一致） --------------------------
+HOST = "127.0.0.1"  # 服务端IP（本地测试用127.0.0.1，局域网用本机IP）
+PORT = 12345         # 端口号：必须与算法客户端的port完全一致
+BUFFER_SIZE = 4096   # 数据缓冲区：与客户端保持一致
+ENCODING = "utf-8"   # 编码格式：与客户端保持一致，避免乱码
+
+
+class SocketWorker(QObject):
+    """后台 socket 工作线程：接收客户端落子并通过信号发送给 GUI 主线程来显示棋子。"""
+    move_received = Signal(int, int, str)  # row, col, color_str ('white'/'black')
+    info = Signal(str)
+
+    def __init__(self, host=HOST, port=PORT, buffer_size=BUFFER_SIZE, encoding=ENCODING, board_size=19):
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.buffer_size = buffer_size
+        self.encoding = encoding
+        self.board_size = board_size
+        self._stop = threading.Event()
+
+    def stop(self):
+        self._stop.set()
+
+    def run(self):
+        """在独立线程中运行 socket 服务端。收到落子时 emit move_received(row, col, color)
+        该方法会阻塞直到连接关闭或 stop() 被调用。"""
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen(1)
+        self.info.emit(f"主控服务端已启动，正在{self.host}:{self.port}等待算法客户端连接...")
+
+        try:
+            client_conn, client_addr = server_socket.accept()
+            self.info.emit(f"已与算法客户端{client_addr}建立连接，开始对战！")
+
+            board = create_board(size=self.board_size)
+            current_player = "X"
+            game_over = False
+
+            while not game_over and not self._stop.is_set():
+                # 发送请求给客户端，要求其返回下一步（原始协议保留）
+                request_data = {"type": "request_move", "board": board, "player": current_player}
+                try:
+                    client_conn.sendall(json.dumps(request_data).encode(self.encoding))
+                except Exception as e:
+                    self.info.emit(f"发送请求失败：{e}")
+                    break
+
+                # 接收响应
+                try:
+                    response_bytes = client_conn.recv(self.buffer_size)
+                except Exception as e:
+                    self.info.emit(f"接收响应失败：{e}")
+                    break
+
+                if not response_bytes:
+                    self.info.emit("客户端断开连接，结束对战")
+                    break
+
+                try:
+                    response = json.loads(response_bytes.decode(self.encoding))
+                except Exception as e:
+                    self.info.emit(f"解析客户端响应失败：{e}")
+                    break
+
+                row = response.get('row')
+                col = response.get('col')
+                self.info.emit(f"收到客户端落子响应：行{row}，列{col}")
+
+                # 简单合法性检查
+                if row is None or col is None:
+                    self.info.emit("收到无效坐标，终止对局")
+                    break
+                if not (0 <= row < self.board_size and 0 <= col < self.board_size):
+                    self.info.emit("坐标超出范围，终止对局")
+                    break
+
+                if board[row][col] != '.':
+                    self.info.emit(f"客户端落子{row},{col}已被占用，终止对局")
+                    break
+
+                # 更新逻辑棋盘并通过信号通知 GUI 放子（GUI 接受 (x=col, y=row)）
+                board[row][col] = current_player
+                color = 'white' if current_player == 'X' else 'black'
+                # emit 信号（此信号是线程安全的，会在主线程执行槽）
+                self.move_received.emit(row, col, color)
+
+                # 判胜负
+                if check_win(board, current_player):
+                    self.info.emit(f"玩家{current_player}获胜！")
+                    game_over = True
+                elif is_full(board):
+                    self.info.emit("棋盘已满，平局！")
+                    game_over = True
+                else:
+                    current_player = switch_player(current_player)
+
+            # 关闭连接
+            try:
+                client_conn.close()
+            except Exception:
+                pass
+
+        except Exception as e:
+            self.info.emit(f"主控程序出错：{e}")
+        finally:
+            try:
+                server_socket.close()
+            except Exception:
+                pass
+            self.info.emit("主控服务端已停止")
+
+
+def start_gui_with_socket():
+    app = QApplication([])
+    view = DuiZhanJieMian()
+    view.ui.show()
+
+    worker = SocketWorker(board_size=19)
+
+    # 将 worker 的 move_received 信号连接到 view.place_piece
+    # 注意：view.place_piece 接受 pos=(x,y) 与 color 字符串
+    def on_move(row, col, color):
+        try:
+            # 注意 view.place_piece 接收的是 (x=col, y=row)
+            view.place_piece((col, row), color)
+        except Exception as e:
+            print(f"在 GUI 中放子失败：{e}")
+
+    worker.move_received.connect(on_move)
+
+    # 将信息信号打印到控制台（也可扩展到 UI 上）
+    worker.info.connect(lambda s: print(s))
+
+    # 在后台线程运行 socket 服务
+    t = threading.Thread(target=worker.run, daemon=True)
+    t.start()
+
+    # 启动 Qt 事件循环
+    sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    start_gui_with_socket()
