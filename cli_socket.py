@@ -128,6 +128,6 @@ if __name__ == "__main__":
     socket_client(
         host="127.0.0.1",  # 替换为主控程序的IP
         port=12345,  # 替换为主控程序的Socket端口
-        bot_type="simple_bot",  # 选择算法：random_bot/simple_bot/minimax_bot
+        bot_type=bot_type,  # 选择算法：random_bot/simple_bot/minimax_bot
         minimax_depth=4  # 仅minimax_bot生效，建议3-5（过深会卡顿）
     )

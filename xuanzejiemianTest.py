@@ -25,7 +25,7 @@ class XuanZeJieMian(QObject):
         self.ui.close()
 
     def minmax_clicked(self):
-        self.selected_bot = "minmax_bot"
+        self.selected_bot = "minimax_bot"
         QMessageBox.information(self.ui, "选择确认", "您选择了极小化算法（Minmax Bot）")
         self.ui.close()
 
