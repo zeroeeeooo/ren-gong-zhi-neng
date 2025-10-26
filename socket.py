@@ -15,7 +15,11 @@ ENCODING = "utf-8"  # 字符编码
 
 
 def parse_request_data(data_str):
-    """解析主控程序发来的请求数据，验证格式合法性"""
+    """解析主控程序发来的请求数据，验证格式合法性
+    输入参数：字符串形式的字典,格式要求示例：“{”type":"....","board":".....","player":"...."}
+    返回值：元组格式，(board,player)
+    抛出异常
+    """
     try:
         data = json.loads(data_str)
         # 校验必要字段：请求类型、棋盘、当前玩家
@@ -32,7 +36,11 @@ def parse_request_data(data_str):
 
 
 def call_bot_algorithm(board, player, bot_type="simple_bot", minimax_depth=3):
-    """根据指定的bot类型，调用对应算法计算落子坐标"""
+    """根据指定的bot类型，调用对应算法计算落子坐标
+    输入参数：board(list), player(str), bot_type(str), minimax_dept(int)
+    返回值：(row,col),落子坐标
+    抛出异常
+    """
     try:
         if is_full(board):
             raise Exception("棋盘已满，无需落子")
@@ -53,10 +61,14 @@ def call_bot_algorithm(board, player, bot_type="simple_bot", minimax_depth=3):
 def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_depth=3):
     """
     Socket客户端主逻辑：连接主控、接收请求、调用算法、返回响应
-    :param host: 主控程序IP地址（默认本地）
-    :param port: 主控程序Socket端口（默认12345）
-    :param bot_type: 选择使用的算法（默认simple_bot）
-    :param minimax_depth: minimax算法搜索深度（默认3，深度越大越智能但耗时更长）
+    输入参数：
+     host: 主控程序IP地址（默认本地）
+     port: 主控程序Socket端口（默认12345）
+     bot_type: 选择使用的算法（默认simple_bot）
+     minimax_depth: minimax算法搜索深度（默认3，深度越大越智能但耗时更长）
+
+    返回值：None
+    异常抛出
     """
     client_socket = None
     try:
