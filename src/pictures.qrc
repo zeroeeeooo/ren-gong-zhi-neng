@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="src/">
+    <file>picture/qipan.jpg</file>
+    <file>picture/白子.jpg</file>
+    <file>picture/黑子.jpg</file>
+    <file>picture/机器人(1).jpg</file>
+    <file>picture/机器人.jpg</file>
+  </qresource>
+</RCC>
