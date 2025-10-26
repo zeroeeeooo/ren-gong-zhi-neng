@@ -1,4 +1,4 @@
-from .utils import check_win, switch_player
+from utils import check_win, switch_player
 import math
 
 def evaluate(board, player):
@@ -85,6 +85,6 @@ def minimax(board, depth, alpha, beta, maximizing, player):
                 break
         return min_eval, best_move
 
-def minimax_bot(board, player, depth=3):
+def minimax_aibot(board, player, depth=3):
     _, move = minimax(board, depth, -math.inf, math.inf, True, player)
     return move

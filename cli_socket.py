@@ -1,9 +1,9 @@
 import socket
 import json
 import sys
-from random_bot import random_bot
-from simple_bot import simple_bot
-from minimax_bot import minimax_bot
+from random_bot import random_aibot
+from simple_bot import simple_aibot
+from minimax_bot import minimax_aibot
 from utils import is_full  # 用于判断棋盘是否已满（避免极端场景）
 
 # 通信协议配置（需与主控程序保持完全一致）
@@ -47,11 +47,11 @@ def call_bot_algorithm(board, player, bot_type="simple_bot", minimax_depth=3):
 
         # 调用对应算法
         if bot_type == "random_bot":
-            return random_bot(board, player)
+            return random_aibot(board, player)
         elif bot_type == "simple_bot":
-            return simple_bot(board, player)
+            return simple_aibot(board, player)
         elif bot_type == "minimax_bot":
-            return minimax_bot(board, player, depth=minimax_depth)
+            return minimax_aibot(board, player, depth=minimax_depth)
         else:
             raise ValueError(f"不支持的bot类型：{bot_type}，可选值：random_bot/simple_bot/minimax_bot")
     except Exception as e:

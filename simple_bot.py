@@ -1,7 +1,7 @@
-from .utils import check_win, switch_player
+from utils import check_win, switch_player
 import random
 
-def simple_bot(board, player):
+def simple_aibot(board, player):
     n = len(board)
     opponent = switch_player(player)
 
