@@ -1,9 +1,9 @@
 import socket
 import json
 import sys
-from random_bot import random_bot
-from simple_bot import simple_bot
-from minimax_bot import minimax_bot
+from random_bot import random_aibot
+from simple_bot import simple_aibot
+from minimax_bot import minimax_aibot
 from utils import is_full  # 用于判断棋盘是否已满（避免极端场景）
 
 # 通信协议配置（需与主控程序保持完全一致）

@@ -72,10 +72,10 @@ def main():
 
             # 调用裁判函数判胜负/平局
             if check_win(board, current_player):
-                print(f"\n🎉 玩家{current_player}获胜！")
+                print(f"\n玩家{current_player}获胜！")
                 game_over = True
             elif is_full(board):
-                print(f"\n🤝 棋盘已满，平局！")
+                print(f"\n棋盘已满，平局！")
                 game_over = True
             else:
                 # 切换玩家，进入下一轮
