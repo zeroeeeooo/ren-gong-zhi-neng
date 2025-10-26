@@ -7,9 +7,9 @@ from duizhanTest import DuiZhanJieMian
 import sys
 import time
 from utils import create_board, check_win, is_full, switch_player
-from random_bot import random_bot
-from minimax_bot import minimax_bot
-from simple_bot import simple_bot
+from random_bot import random_aibot
+from minimax_bot import minimax_aibot
+from simple_bot import simple_aibot
 
 def StartZhuJieMian(zhujiemian):
     zhujiemian.ui.show()
@@ -156,10 +156,10 @@ if __name__ == '__main__':
     view = DuiZhanJieMian()
     view.ui.show()
 
-    bots = [random_bot, simple_bot, minimax_bot]
+    bots = [random_aibot, simple_aibot, minimax_aibot]
 
-    # 机器人编号映射：random_bot -> 1, simple_bot -> 2, minimax_bot -> 3
-    bot_number = {random_bot.__name__: 1, simple_bot.__name__: 2, minimax_bot.__name__: 3}
+    # 机器人编号映射：random_aibot -> 1, simple_aibot -> 2, minimax_aibot -> 3
+    bot_number = {random_aibot.__name__: 1, simple_aibot.__name__: 2, minimax_aibot.__name__: 3}
     # 初始化统计
     robot_stats = {
         1: {'wins': 0, 'losses': 0},

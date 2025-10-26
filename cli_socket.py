@@ -47,11 +47,11 @@ def call_bot_algorithm(board, player, bot_type="simple_bot", minimax_depth=3):
 
         # 调用对应算法
         if bot_type == "random_bot":
-            return random_bot(board, player)
+            return random_aibot(board, player)
         elif bot_type == "simple_bot":
-            return simple_bot(board, player)
+            return simple_aibot(board, player)
         elif bot_type == "minimax_bot":
-            return minimax_bot(board, player, depth=minimax_depth)
+            return minimax_aibot(board, player, depth=minimax_depth)
         else:
             raise ValueError(f"不支持的bot类型：{bot_type}，可选值：random_bot/simple_bot/minimax_bot")
     except Exception as e:
