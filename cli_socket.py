@@ -59,7 +59,7 @@ def call_bot_algorithm(board, player, bot_type="simple_bot", minimax_depth=3):
         raise Exception(f"算法计算落子失败：{str(e)}")
 
 
-def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_depth=3):
+def socket_client(host, port, bot_typeO,bot_typeX, minimax_depth=3):
     """
     Socket客户端主逻辑：连接主控、接收请求、调用算法、返回响应
     输入参数：
@@ -76,7 +76,7 @@ def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_d
         # 1. 创建Socket并连接主控
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((host, port))
-        print(f"✅ 已连接主控程序（{host}:{port}），使用算法：{bot_type}")
+        print(f"✅ 已连接主控程序（{host}:{port}），使用算法：{bot_typeO}")
 
         # 2. 循环接收主控请求（一局游戏可能多次接收落子请求）
         while True:
@@ -90,7 +90,11 @@ def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_d
 
             # 3. 解析请求并调用算法
             board, player = parse_request_data(request_data)
-            row, col = call_bot_algorithm(board, player, bot_type, minimax_depth)
+            row,col = 0,0
+            if player == 'O':
+                row, col = call_bot_algorithm(board, player, bot_typeO, minimax_depth)
+            else:
+                row,col = call_bot_algorithm(board, player, bot_typeX, minimax_depth)
 
             # 4. 构造响应数据（JSON格式）
             response = {
@@ -116,11 +120,14 @@ def socket_client(host="127.0.0.1", port=12345, bot_type="simple_bot", minimax_d
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    xuanze = XuanZeJieMian()
-    xuanze.ui.show()
+    xuanzex = XuanZeJieMian()
+    xuanzex.ui.show()
+    xuanzey = XuanZeJieMian()
+    xuanzey.ui.show()
     app.exec_()
-    bot_type = xuanze.getBotType()
-    print("选择的bot类型：", bot_type)
+    target_bot_typeX = xuanzex.getBotType();
+    target_bot_typeO = xuanzey.getBotType();
+
     # 示例：运行客户端（可通过命令行参数或直接修改参数）
     # 用法1：默认参数（本地主控+simple_bot）
     # socket_client()
@@ -129,6 +136,7 @@ if __name__ == "__main__":
     socket_client(
         host="127.0.0.1",  # 替换为主控程序的IP
         port=12345,  # 替换为主控程序的Socket端口
-        bot_type=bot_type,  # 选择算法：random_bot/simple_bot/minimax_bot
+        bot_typeO=target_bot_typeO,  # 选择算法：random_bot/simple_bot/minimax_bot
+        bot_typeX = target_bot_typeX,
         minimax_depth=4  # 仅minimax_bot生效，建议3-5（过深会卡顿）
     )
